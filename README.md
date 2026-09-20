@@ -4,11 +4,12 @@
 
 ### Agente de IA para classificação e extração automática de dados de faturas
 
-[![n8n](https://img.shields.io/badge/n8n-Automa%C3%A7%C3%A3o-EA4B71?logo=n8n&logoColor=white)](#execu%C3%A7%C3%A3o)
-[![Google Drive](https://img.shields.io/badge/Google%20Drive-Documentos-4285F4?logo=googledrive&logoColor=white)](#google-drive)
-[![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Registo-34A853?logo=googlesheets&logoColor=white)](#resultado)
-[![Docker](https://img.shields.io/badge/Docker-n8n-2496ED?logo=docker&logoColor=white)](#execu%C3%A7%C3%A3o)
-[![GroqCloud](https://img.shields.io/badge/GroqCloud-LLM-F55036)](#groqcloud)\n[![IA](https://img.shields.io/badge/IA-Classifica%C3%A7%C3%A3o-6C63FF)](#princ%C3%ADpio-essencial)
+[![n8n](https://img.shields.io/badge/n8n-Automa%C3%A7%C3%A3o-EA4B71?logo=n8n&logoColor=white)](#arranque-com-docker)
+[![Google Drive](https://img.shields.io/badge/Google%20Drive-Documentos-4285F4?logo=googledrive&logoColor=white)](#configura%C3%A7%C3%A3o-google)
+[![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Registo-34A853?logo=googlesheets&logoColor=white)](#google-sheets)
+[![Docker](https://img.shields.io/badge/Docker-n8n-2496ED?logo=docker&logoColor=white)](#arranque-com-docker)
+[![GroqCloud](https://img.shields.io/badge/GroqCloud-LLM-F55036)](#configura%C3%A7%C3%A3o-groqcloud)
+[![IA](https://img.shields.io/badge/IA-Classifica%C3%A7%C3%A3o-6C63FF)](#princ%C3%ADpio-essencial)
 
 **Água · Eletricidade · Comunicações · Extração de dados · Google Drive · Google Sheets · n8n**
 
@@ -20,11 +21,11 @@ Desenvolvido por [Rui Ribeiro](https://github.com/ruialexrib)
 
 ## Sobre
 
-Este repositório contém as instruções, skills, regras, schemas, exemplos, testes e infraestrutura necessários para executar um **agente de classificação documental** orientado ao processamento automático de faturas.
+Este repositório contém a configuração, workflow n8n, regras, skills, schemas, exemplos e infraestrutura necessários para executar um agente de classificação documental orientado ao processamento automático de faturas.
 
-O agente monitoriza uma pasta no Google Drive, identifica novas faturas, classifica o respetivo serviço e extrai os principais dados necessários para registo e controlo de pagamento.
+O agente monitoriza uma pasta no Google Drive, identifica novas faturas, extrai o respetivo conteúdo, classifica o serviço e regista os principais dados num Google Sheets.
 
-O processo é orquestrado por **n8n**, executado em Docker, com verificação periódica de novos documentos.
+A execução é feita em **n8n**, dentro de um contentor Docker, utilizando **GroqCloud** como provider do modelo de linguagem.
 
 > A IA apoia a leitura, classificação e extração dos dados, mas documentos ambíguos ou com informação insuficiente devem permanecer identificados para revisão humana.
 
@@ -32,13 +33,13 @@ O processo é orquestrado por **n8n**, executado em Docker, com verificação pe
 
 ## Objetivo
 
-O agente foi concebido inicialmente para processar três tipos de faturas:
+A versão atual processa inicialmente três tipos de faturas:
 
 - água;
 - eletricidade;
 - comunicações.
 
-Para cada documento, procura identificar e extrair:
+Para cada documento procura extrair:
 
 | Campo | Descrição |
 | --- | --- |
@@ -49,12 +50,7 @@ Para cada documento, procura identificar e extrair:
 | Referência Multibanco | Referência associada ao pagamento |
 | Data limite de pagamento | Data até à qual o pagamento deve ser efetuado |
 
-Sempre que disponíveis de forma explícita, podem também ser recolhidos:
-
-- fornecedor;
-- número da fatura;
-- número de cliente ou contrato;
-- moeda.
+Sempre que disponíveis de forma explícita, podem também ser recolhidos fornecedor, número da fatura, número de cliente ou contrato e moeda.
 
 ---
 
@@ -69,17 +65,17 @@ n8n verifica novos ficheiros
 de 5 em 5 minutos
         │
         ▼
-Identificar documento
+Identificar PDF
         │
         ▼
-Extrair conteúdo
+Descarregar documento
         │
         ▼
-Classificar serviço
-Água / Eletricidade / Comunicações
+Extrair texto do PDF
         │
         ▼
-Extrair dados da fatura
+Classificar e extrair dados
+via GroqCloud
         │
         ▼
 Validar resultado
@@ -97,27 +93,481 @@ Registar no Google Sheets
 
 ---
 
-## Resultado
+## Pré-requisitos
 
-Cada documento processado origina um registo estruturado no Google Sheets.
+Antes de iniciar, é necessário ter:
 
-| Campo | Exemplo |
-| --- | --- |
-| Serviço | `ELETRICIDADE` |
-| Data de emissão | `2026-09-10` |
-| Valor a pagar | `84.27` |
-| Entidade Multibanco | `12345` |
-| Referência Multibanco | `123456789` |
-| Data limite | `2026-09-30` |
-| Estado | `CLASSIFIED` |
-| Confiança | `0.97` |
+- Git;
+- Docker Desktop ou Docker Engine;
+- Docker Compose;
+- uma conta Google;
+- um projeto no Google Cloud;
+- uma conta GroqCloud e respetiva API key.
 
-Exemplo de output estruturado:
+Confirmar Docker:
+
+```bash
+docker --version
+docker compose version
+```
+
+---
+
+## Clonar o repositório
+
+```bash
+git clone https://github.com/ruialexrib/document-classification-agent.git
+cd document-classification-agent
+```
+
+Se estiveres a trabalhar numa branch de desenvolvimento:
+
+```bash
+git checkout feat/operational-n8n-workflow
+git pull
+```
+
+---
+
+## Configuração do ficheiro .env
+
+Criar o ficheiro local:
+
+### Windows
+
+```powershell
+copy .env.example .env
+```
+
+### Linux/macOS
+
+```bash
+cp .env.example .env
+```
+
+O ficheiro `.env` não deve ser enviado para o GitHub.
+
+Exemplo:
+
+```env
+# n8n
+N8N_PORT=5678
+N8N_HOST=localhost
+N8N_PROTOCOL=http
+GENERIC_TIMEZONE=Europe/Lisbon
+TZ=Europe/Lisbon
+
+# Segurança n8n
+N8N_ENCRYPTION_KEY=colocar-aqui-uma-chave-longa-e-aleatoria
+
+# Google Drive
+GOOGLE_DRIVE_INPUT_FOLDER_ID=
+GOOGLE_DRIVE_PROCESSED_FOLDER_ID=
+GOOGLE_DRIVE_REVIEW_FOLDER_ID=
+GOOGLE_DRIVE_ERROR_FOLDER_ID=
+
+# Google Sheets
+GOOGLE_SHEET_ID=
+GOOGLE_SHEET_NAME=Registo_Classificacao
+
+# GroqCloud
+LLM_PROVIDER=groq
+LLM_BASE_URL=https://api.groq.com/openai/v1
+GROQ_API_KEY=
+LLM_MODEL=qwen/qwen3.6-27b
+```
+
+O `docker-compose.yml` define adicionalmente:
+
+```env
+N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+```
+
+Isto é necessário porque o workflow utiliza variáveis de ambiente através de `$env`.
+
+### Gerar N8N_ENCRYPTION_KEY
+
+Pode ser utilizada uma string aleatória longa. Por exemplo, com OpenSSL:
+
+```bash
+openssl rand -hex 32
+```
+
+A mesma chave deve ser preservada entre reinícios e reinstalações que reutilizem as credenciais do n8n.
+
+---
+
+## Estrutura Google Drive
+
+Criar uma estrutura semelhante a:
+
+```text
+Classificacao_Documental/
+├── Documentos_A_Classificar/
+├── Documentos_Processados/
+├── Documentos_A_Rever/
+└── Documentos_Com_Erro/
+```
+
+Copiar o ID de cada pasta para o `.env`.
+
+Num URL Google Drive semelhante a:
+
+```text
+https://drive.google.com/drive/folders/PASTA_ID
+```
+
+o valor `PASTA_ID` é o identificador a colocar no `.env`.
+
+---
+
+## Google Sheets
+
+Criar uma folha de cálculo e um separador denominado:
+
+```text
+Registo_Classificacao
+```
+
+O nome pode ser diferente, desde que coincida com:
+
+```env
+GOOGLE_SHEET_NAME=
+```
+
+A folha deve conter na primeira linha os seguintes cabeçalhos:
+
+```text
+drive_file_id
+file_name
+processed_at
+document_type
+service
+provider
+invoice_number
+customer_number
+issue_date
+amount_due
+currency
+multibanco_entity
+multibanco_reference
+payment_deadline
+status
+confidence
+reasoning_summary
+review_reason
+rules_version
+```
+
+O ID da folha encontra-se no URL:
+
+```text
+https://docs.google.com/spreadsheets/d/GOOGLE_SHEET_ID/edit
+```
+
+Colocar esse valor em:
+
+```env
+GOOGLE_SHEET_ID=
+```
+
+---
+
+## Configuração Google
+
+### 1. Criar ou selecionar um projeto Google Cloud
+
+Abrir o Google Cloud Console e criar ou selecionar um projeto para o agente.
+
+### 2. Ativar APIs
+
+Em **APIs e serviços**, ativar:
+
+- Google Drive API;
+- Google Sheets API.
+
+### 3. Configurar Google Auth Platform
+
+Abrir:
+
+```text
+Google Auth Platform
+```
+
+Configurar:
+
+#### Branding
+
+Definir, por exemplo:
+
+```text
+App name: document-classification-agent
+User support email: <o teu email>
+Developer contact information: <o teu email>
+```
+
+#### Audience
+
+Para utilização pessoal com uma conta Gmail:
+
+```text
+Audience: External
+Publishing status: Testing
+```
+
+Em **Test users**, adicionar a conta Google que será utilizada no n8n.
+
+Se a conta não for adicionada, o Google pode devolver:
+
+```text
+Erro 403: access_denied
+A app está a ser testada e só pode ser acedida por testadores aprovados.
+```
+
+### 4. Criar cliente OAuth
+
+Ir a:
+
+```text
+Google Auth Platform
+→ Clients
+→ Create client
+→ Web application
+```
+
+Configurar o redirect URI:
+
+```text
+http://localhost:5678/rest/oauth2-credential/callback
+```
+
+Se o n8n estiver disponível noutro hostname ou porta, utilizar exatamente o callback apresentado pelo próprio n8n na criação da credencial.
+
+Guardar:
+
+- Client ID;
+- Client Secret.
+
+O mesmo Client ID e Client Secret podem ser utilizados para Google Drive e Google Sheets.
+
+---
+
+## Configuração GroqCloud
+
+Criar uma API key na conta GroqCloud e colocar apenas no ficheiro local `.env`:
+
+```env
+GROQ_API_KEY=gsk_...
+```
+
+Nunca colocar a chave real em:
+
+- `.env.example`;
+- workflow JSON;
+- commits;
+- issues;
+- README.
+
+Configuração esperada:
+
+```env
+LLM_PROVIDER=groq
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=qwen/qwen3.6-27b
+```
+
+---
+
+## Arranque com Docker
+
+Depois de configurar o `.env`:
+
+```bash
+docker compose up -d
+```
+
+O n8n fica disponível em:
+
+```text
+http://localhost:5678
+```
+
+Ver logs:
+
+```bash
+docker logs -f document-classification-n8n
+```
+
+Parar:
+
+```bash
+docker compose down
+```
+
+Recriar após alteração de configuração:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+---
+
+## Importação automática do workflow
+
+O contentor importa automaticamente no arranque:
+
+```text
+n8n/workflows/document-classification.json
+```
+
+O processo de arranque é:
+
+```text
+docker compose up -d
+        ↓
+preparar contentor
+        ↓
+importar workflow
+        ↓
+iniciar n8n
+```
+
+Se a importação do workflow falhar, o contentor termina com erro para evitar arrancar silenciosamente sem workflow.
+
+O workflow é importado inicialmente desativado.
+
+---
+
+## Configurar credenciais no n8n
+
+### Google Drive
+
+Abrir um nó Google Drive, por exemplo:
+
+```text
+List input files
+```
+
+Em **Credential**, criar:
+
+```text
+Google Drive OAuth2 API
+```
+
+Preencher:
+
+- Client ID;
+- Client Secret.
+
+Autorizar a conta Google.
+
+Depois reutilizar a mesma credencial nos nós:
+
+```text
+List input files
+Download PDF
+Move to Processed
+Move to Review
+Move to Error
+```
+
+### Google Sheets
+
+No nó:
+
+```text
+Append classification to Google Sheets
+```
+
+criar uma credencial:
+
+```text
+Google Sheets OAuth2 API
+```
+
+Pode utilizar o mesmo Client ID e Client Secret.
+
+Autorizar a mesma conta Google.
+
+> O consentimento OAuth é necessário pelo menos uma vez. Depois, as credenciais ficam persistidas no volume `n8n_data`.
+
+---
+
+## Testar o workflow
+
+Antes de ativar a execução automática, utilizar o trigger:
+
+```text
+Manual test
+```
+
+### Teste recomendado
+
+1. colocar uma única fatura PDF em `Documentos_A_Classificar`;
+2. abrir o workflow no n8n;
+3. executar `Manual test`;
+4. acompanhar os nós;
+5. confirmar a linha criada no Google Sheets;
+6. confirmar o movimento do ficheiro para a pasta correta.
+
+Percurso esperado:
+
+```text
+Manual test
+   ↓
+Validate configuration
+   ↓
+List input files
+   ↓
+Skip already processed
+   ↓
+Is PDF?
+   ↓
+Download PDF
+   ↓
+Extract PDF text
+   ↓
+Has extractable text?
+   ↓
+Classify with GroqCloud
+   ↓
+Validate structured result
+   ↓
+Append classification to Google Sheets
+   ↓
+Mark as processed
+   ↓
+Move to Processed / Review / Error
+```
+
+---
+
+## Faturas de demonstração
+
+O repositório inclui três faturas fictícias:
+
+```text
+examples/demo-invoices/
+├── fatura_demo_agua.pdf
+├── fatura_demo_eletricidade.pdf
+└── fatura_demo_comunicacoes.pdf
+```
+
+Podem ser utilizadas para testar a classificação sem recorrer a documentos reais.
+
+Copiar uma das faturas para a pasta Google Drive `Documentos_A_Classificar` e executar `Manual test`.
+
+---
+
+## Resultado esperado
+
+Uma classificação bem sucedida deverá produzir um registo semelhante a:
 
 ```json
 {
   "drive_file_id": "example-drive-file-id",
-  "file_name": "fatura-eletricidade-setembro-2026.pdf",
+  "file_name": "fatura_demo_eletricidade.pdf",
   "processed_at": "2026-09-20T12:00:00+01:00",
   "document_type": "FATURA_ELETRICIDADE",
   "service": "ELETRICIDADE",
@@ -132,7 +582,7 @@ Exemplo de output estruturado:
   "payment_deadline": "2026-09-30",
   "status": "CLASSIFIED",
   "confidence": 0.97,
-  "reasoning_summary": "A fatura identifica fornecimento de eletricidade e apresenta consumo em kWh, total a pagar e dados Multibanco.",
+  "reasoning_summary": "A fatura identifica fornecimento de eletricidade.",
   "review_reason": null,
   "rules_version": "0.2.0"
 }
@@ -148,7 +598,98 @@ Exemplo de output estruturado:
 | `REVIEW` | Documento ambíguo ou com informação insuficiente |
 | `ERROR` | Falha técnica ou impossibilidade de leitura |
 
-A ausência de um campo numa fatura não constitui automaticamente erro. Sempre que o valor não estiver disponível de forma segura, o campo deve permanecer `null`.
+A ausência de um campo numa fatura não constitui automaticamente erro.
+
+---
+
+## Ativar execução automática
+
+Depois de validar com sucesso o modo manual:
+
+1. guardar o workflow;
+2. ativar/publicar o workflow no n8n;
+3. confirmar que o trigger `Every 5 minutes` está ativo.
+
+A partir daí o n8n verificará periodicamente a pasta de entrada.
+
+---
+
+## Troubleshooting
+
+### `access to env vars denied`
+
+Confirmar que o `docker-compose.yml` contém:
+
+```yaml
+- N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+```
+
+Depois:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+### `Node does not have any credentials set`
+
+Abrir o nó e selecionar a credencial Google correspondente.
+
+### Google OAuth: `403 access_denied`
+
+Confirmar em:
+
+```text
+Google Auth Platform → Audience → Test users
+```
+
+que a conta utilizada está adicionada como test user.
+
+### Callback OAuth inválido
+
+Confirmar:
+
+```text
+http://localhost:5678/rest/oauth2-credential/callback
+```
+
+e comparar com o callback apresentado pelo próprio n8n.
+
+### `SQLITE_CONSTRAINT: NOT NULL constraint failed: workflow_entity.id`
+
+Utilizar a versão atual do workflow existente no repositório. O JSON contém um `id` fixo compatível com a importação CLI do n8n.
+
+### O PDF é enviado para REVIEW apesar de conter texto
+
+Abrir o output de:
+
+```text
+Extract PDF text
+```
+
+e confirmar que existe o campo:
+
+```text
+text
+```
+
+A versão atual testa explicitamente se o conteúdo extraído contém pelo menos 20 caracteres.
+
+### PDF digitalizado
+
+Se não existir texto extraível, o workflow encaminha o ficheiro para `REVIEW`. OCR automático ainda não faz parte desta versão.
+
+### Ver logs do contentor
+
+```bash
+docker logs --tail 200 document-classification-n8n
+```
+
+ou:
+
+```bash
+docker logs -f document-classification-n8n
+```
 
 ---
 
@@ -183,7 +724,12 @@ schemas/
 └── classification.schema.json
 
 examples/
-└── classification-example.json
+├── classification-example.json
+└── demo-invoices/
+    ├── README.md
+    ├── fatura_demo_agua.pdf
+    ├── fatura_demo_eletricidade.pdf
+    └── fatura_demo_comunicacoes.pdf
 
 tests/
 └── classification-cases.yaml
@@ -198,7 +744,7 @@ docs/
 
 ## Skills do agente
 
-Cada skill tem uma responsabilidade específica.
+As skills documentam as responsabilidades funcionais do agente:
 
 | Skill | Responsabilidade |
 | --- | --- |
@@ -206,100 +752,26 @@ Cada skill tem uma responsabilidade específica.
 | `classify-document` | Identificar o tipo de serviço |
 | `validate-classification` | Verificar consistência e confiança |
 | `handle-uncertain-document` | Encaminhar situações ambíguas para revisão |
-| `register-result` | Preparar o registo final para o Google Sheets |
+| `register-result` | Preparar o registo final |
 
----
-
-## Google Drive
-
-Estrutura prevista:
-
-```text
-Classificacao_Documental/
-├── Documentos_A_Classificar/
-├── Documentos_Processados/
-├── Documentos_A_Rever/
-├── Documentos_Com_Erro/
-└── Registo_Classificacao
-```
-
-O `drive_file_id` é utilizado como identificador técnico principal de cada documento para evitar processamentos duplicados.
-
----
-
-## Execução
-
-### 1. Criar configuração local
-
-```bash
-cp .env.example .env
-```
-
-Preencher as variáveis necessárias no ficheiro `.env`.
-
-### 2. Iniciar o n8n
-
-```bash
-docker compose up -d
-```
-
-Por defeito, o n8n ficará disponível em:
-
-```text
-http://localhost:5678
-```
-
-### 3. Importação automática do workflow
-
-O contentor importa no arranque:
-
-```text
-n8n/workflows/document-classification.json
-```
-
-O workflow é disponibilizado inicialmente **desativado**, para permitir configurar e testar as credenciais antes da execução automática.
-
----
-
-## Configuração do n8n
-
-Após o primeiro arranque:
-
-1. configurar as credenciais do Google Drive;
-2. configurar as credenciais do Google Sheets;
-3. associar as credenciais Google Drive e Google Sheets aos respetivos nós;\n4. confirmar a configuração GroqCloud;
-4. indicar os IDs das pastas;
-5. indicar o Google Sheet de destino;
-6. executar o workflow manualmente;
-7. validar o resultado;
-8. ativar o workflow.
-
-A execução automática está preparada para uma cadência de **5 em 5 minutos**. A versão operacional suporta inicialmente faturas PDF com texto extraível; PDFs digitalizados sem camada de texto são encaminhados para `REVIEW` para posterior OCR.
+Na versão atual, as regras essenciais estão embebidas no workflow n8n. As skills constituem a especificação funcional e base para futuras evoluções.
 
 ---
 
 ## Princípio essencial
 
-O agente **não deve inventar nem forçar informação**.
+O agente não deve inventar nem forçar informação.
 
 Em particular:
 
-- não deve inferir uma referência Multibanco inexistente;
+- não deve inventar referências Multibanco;
 - não deve escolher arbitrariamente entre vários valores;
 - não deve confundir subtotal com valor final a pagar;
 - não deve confundir data de emissão com data limite de pagamento;
 - não deve assumir o tipo de serviço apenas pelo nome do ficheiro;
 - não deve esconder situações ambíguas.
 
-Quando existem alternativas plausíveis ou informação insuficiente, o documento deve ser marcado como `REVIEW`.
-
-Este princípio procura garantir:
-
-- transparência;
-- rastreabilidade;
-- auditabilidade;
-- qualidade dos dados;
-- controlo humano sobre situações ambíguas.
+Quando existe informação insuficiente, o documento deve ser marcado como `REVIEW`.
 
 ---
 
@@ -307,16 +779,17 @@ Este princípio procura garantir:
 
 Nunca devem ser guardados no repositório:
 
-- chaves de API;
+- API keys;
 - passwords;
 - tokens OAuth;
-- credenciais Google;
+- Client Secrets;
 - credenciais n8n;
+- ficheiros `.env` reais;
 - documentos reais com informação confidencial.
 
-As credenciais devem ser geridas através das variáveis de ambiente e do gestor de credenciais do n8n.
+O `.env` local deve permanecer excluído através do `.gitignore`.
 
-Deve ser utilizada uma `N8N_ENCRYPTION_KEY` forte e persistente.
+As credenciais OAuth ficam cifradas pelo n8n utilizando a `N8N_ENCRYPTION_KEY`.
 
 ---
 
@@ -325,12 +798,12 @@ Deve ser utilizada uma `N8N_ENCRYPTION_KEY` forte e persistente.
 | Documento | Finalidade |
 | --- | --- |
 | [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | Regras centrais do agente |
-| [`taxonomy/document-types.yaml`](taxonomy/document-types.yaml) | Tipos de documentos e serviços suportados |
-| [`taxonomy/classification-rules.yaml`](taxonomy/classification-rules.yaml) | Regras funcionais de classificação |
-| [`schemas/classification.schema.json`](schemas/classification.schema.json) | Estrutura obrigatória do resultado |
-| [`docs/architecture.md`](docs/architecture.md) | Arquitetura da solução |
+| [`taxonomy/document-types.yaml`](taxonomy/document-types.yaml) | Tipos suportados |
+| [`taxonomy/classification-rules.yaml`](taxonomy/classification-rules.yaml) | Regras funcionais |
+| [`schemas/classification.schema.json`](schemas/classification.schema.json) | Schema do resultado |
+| [`docs/architecture.md`](docs/architecture.md) | Arquitetura |
 | [`docs/workflow-n8n.md`](docs/workflow-n8n.md) | Funcionamento do workflow |
-| [`docs/security.md`](docs/security.md) | Regras de segurança |
+| [`docs/security.md`](docs/security.md) | Segurança |
 | [`tests/classification-cases.yaml`](tests/classification-cases.yaml) | Casos de teste |
 
 ---
