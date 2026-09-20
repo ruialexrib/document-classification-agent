@@ -1,0 +1,36 @@
+version: "0.2.0"
+
+settings:
+  confidence_threshold: 0.80
+  ambiguous_status: REVIEW
+
+rules:
+  - id: R001
+    description: A classificação deve basear-se no conteúdo do documento e não apenas no nome do ficheiro.
+
+  - id: R002
+    description: Classificar como AGUA quando existirem evidências claras de fornecimento de água, saneamento ou serviços hídricos.
+
+  - id: R003
+    description: Classificar como ELETRICIDADE quando existirem evidências claras de fornecimento de energia elétrica, eletricidade, kWh, CPE ou conceitos equivalentes.
+
+  - id: R004
+    description: Classificar como COMUNICACOES quando existirem evidências claras de telecomunicações, internet, telefone, televisão ou serviços de comunicações.
+
+  - id: R005
+    description: Se o documento for uma fatura mas o serviço não for identificável de forma segura, usar FATURA_OUTRA e REVIEW.
+
+  - id: R006
+    description: Se o documento não for uma fatura, usar NAO_FATURA.
+
+  - id: R007
+    description: Nunca inventar entidade Multibanco, referência Multibanco, data limite de pagamento ou valor a pagar.
+
+  - id: R008
+    description: Se existirem vários valores, selecionar como amount_due apenas o valor explicitamente identificado como total a pagar, valor a pagar ou equivalente.
+
+  - id: R009
+    description: payment_deadline deve corresponder à data limite de pagamento e não à data de emissão nem ao período de faturação.
+
+  - id: R010
+    description: ERROR é reservado a falhas técnicas ou impossibilidade de leitura; documentos ambíguos devem usar REVIEW.

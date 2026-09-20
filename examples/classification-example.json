@@ -1,0 +1,21 @@
+{
+  "drive_file_id": "example-drive-file-id",
+  "file_name": "fatura-eletricidade-setembro-2026.pdf",
+  "processed_at": "2026-09-20T12:00:00+01:00",
+  "document_type": "FATURA_ELETRICIDADE",
+  "service": "ELETRICIDADE",
+  "provider": "Fornecedor Exemplo",
+  "invoice_number": "FT 2026/12345",
+  "customer_number": "987654321",
+  "issue_date": "2026-09-10",
+  "amount_due": 84.27,
+  "currency": "EUR",
+  "multibanco_entity": "12345",
+  "multibanco_reference": "123456789",
+  "payment_deadline": "2026-09-30",
+  "status": "CLASSIFIED",
+  "confidence": 0.97,
+  "reasoning_summary": "A fatura identifica fornecimento de eletricidade e apresenta consumo em kWh, total a pagar e dados Multibanco.",
+  "review_reason": null,
+  "rules_version": "0.2.0"
+}

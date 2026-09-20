@@ -1,0 +1,66 @@
+{
+  "name": "Document Classification - Base",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{inputFolderId:$env.GOOGLE_DRIVE_INPUT_FOLDER_ID,processedFolderId:$env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,reviewFolderId:$env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,errorFolderId:$env.GOOGLE_DRIVE_ERROR_FOLDER_ID,sheetId:$env.GOOGLE_SHEET_ID,sheetName:$env.GOOGLE_SHEET_NAME,llmBaseUrl:$env.LLM_BASE_URL,llmModel:$env.LLM_MODEL}}];"
+      },
+      "id": "load-config",
+      "name": "Load configuration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "content": "BASE WORKFLOW\n\nConfigure Google Drive, Google Sheets and LLM credentials before activation. The remaining operational nodes will be added after the target taxonomy and Google Drive folders are confirmed.",
+        "height": 260,
+        "width": 420
+      },
+      "id": "setup-note",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, -340]
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Load configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00000000-0000-4000-8000-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
