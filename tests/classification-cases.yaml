@@ -1,0 +1,16 @@
+cases:
+  - id: invoice-explicit
+    input: Documento identificado explicitamente como fatura.
+    expected:
+      document_type: FATURA
+      status: CLASSIFIED
+
+  - id: ambiguous-document
+    input: Documento sem título e com conteúdo insuficiente para distinguir entre ofício e relatório.
+    expected:
+      status: REVIEW
+
+  - id: unreadable-document
+    input: Ficheiro sem conteúdo extraível e sem alternativa disponível.
+    expected:
+      status: ERROR
