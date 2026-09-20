@@ -1,6 +1,6 @@
 # Workflow n8n
 
-O workflow base encontra-se em `n8n/workflows/document-classification.json` e é importado no arranque do contentor.
+O workflow base encontra-se em `n8n/workflows/document-classification.json` e é importado automaticamente em cada arranque do contentor, antes do serviço n8n iniciar. Se a importação falhar, o contentor termina com erro em vez de arrancar sem workflow.
 
 ## Periodicidade
 
