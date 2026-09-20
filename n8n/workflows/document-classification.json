@@ -55,7 +55,7 @@
           "folderId": {
             "__rl": true,
             "mode": "id",
-            "value": "={{ $env.GOOGLE_DRIVE_INPUT_FOLDER_ID }}"
+            "value": "={{ $json.inputFolderId }}"
           },
           "whatToSearch": "files"
         },
@@ -95,11 +95,12 @@
           "conditions": [
             {
               "id": "is-pdf-condition",
-              "leftValue": "={{ $json.mimeType || $json.mime_type || '' }}",
-              "rightValue": "application/pdf",
+              "leftValue": "={{ (($json.mimeType || $json.mime_type || '').toLowerCase() === 'application/pdf') || (($json.name || $json.title || '').toLowerCase().endsWith('.pdf')) }}",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "equals"
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
               }
             }
           ],
@@ -881,7 +882,7 @@
     "timezone": "Europe/Lisbon",
     "saveManualExecutions": true
   },
-  "versionId": "00000000-0000-4000-8000-000000000002",
+  "versionId": "00000000-0000-4000-8000-000000000003",
   "triggerCount": 2,
   "meta": {
     "templateCredsSetupCompleted": false
