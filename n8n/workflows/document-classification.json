@@ -1,6 +1,6 @@
 {
   "id": "doc-classification-base",
-  "name": "Document Classification - Base",
+  "name": "Document Classification - Utility Invoices",
   "active": false,
   "nodes": [
     {
@@ -18,29 +18,667 @@
       "name": "Every 5 minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0]
+      "position": [
+        -1320,
+        -120
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual test",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1320,
+        80
+      ]
     },
     {
       "parameters": {
-        "jsCode": "return [{json:{inputFolderId:$env.GOOGLE_DRIVE_INPUT_FOLDER_ID,processedFolderId:$env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,reviewFolderId:$env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,errorFolderId:$env.GOOGLE_DRIVE_ERROR_FOLDER_ID,sheetId:$env.GOOGLE_SHEET_ID,sheetName:$env.GOOGLE_SHEET_NAME,llmProvider:$env.LLM_PROVIDER,llmBaseUrl:$env.LLM_BASE_URL,llmModel:$env.LLM_MODEL}}];"
+        "jsCode": "const required = [\n  'GOOGLE_DRIVE_INPUT_FOLDER_ID',\n  'GOOGLE_DRIVE_PROCESSED_FOLDER_ID',\n  'GOOGLE_DRIVE_REVIEW_FOLDER_ID',\n  'GOOGLE_DRIVE_ERROR_FOLDER_ID',\n  'GOOGLE_SHEET_ID',\n  'GOOGLE_SHEET_NAME',\n  'LLM_BASE_URL',\n  'LLM_MODEL',\n  'GROQ_API_KEY',\n  'NOTIFICATION_EMAIL',\n];\n\nconst missing = required.filter((key) => !$env[key]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\n\nreturn [{\n  json: {\n    inputFolderId: $env.GOOGLE_DRIVE_INPUT_FOLDER_ID,\n    processedFolderId: $env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,\n    reviewFolderId: $env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,\n    errorFolderId: $env.GOOGLE_DRIVE_ERROR_FOLDER_ID,\n    sheetId: $env.GOOGLE_SHEET_ID,\n    sheetName: $env.GOOGLE_SHEET_NAME,\n    llmProvider: $env.LLM_PROVIDER || 'groq',\n    llmBaseUrl: $env.LLM_BASE_URL,\n    llmModel: $env.LLM_MODEL,\n    notificationEmail: $env.NOTIFICATION_EMAIL,\n  }\n}];"
       },
       "id": "load-config",
-      "name": "Load configuration",
+      "name": "Validate configuration",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0]
+      "position": [
+        -1080,
+        -20
+      ]
     },
     {
       "parameters": {
-        "content": "BASE WORKFLOW\n\nProvider: GroqCloud\nBase URL: https://api.groq.com/openai/v1\n\nConfigure Google Drive, Google Sheets and Groq credentials before activation. Keep GROQ_API_KEY outside the workflow JSON.",
-        "height": 280,
-        "width": 440
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.inputFolderId }}"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "id": "list-input-files",
+      "name": "List input files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -840,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $getWorkflowStaticData('global');\nif (!state.processedFileIds) state.processedFileIds = {};\n\nreturn $input.all().filter((item) => {\n  const id = item.json.id;\n  return id && !state.processedFileIds[id];\n});"
+      },
+      "id": "filter-processed",
+      "name": "Skip already processed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-pdf-condition",
+              "leftValue": "={{ (($json.mimeType || $json.mime_type || '').toLowerCase() === 'application/pdf') || (($json.name || $json.title || '').toLowerCase().endsWith('.pdf')) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-pdf",
+      "name": "Is PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {}
+      },
+      "id": "download-file",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -120,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "extract-pdf",
+      "name": "Extract PDF text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        120,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-text-condition",
+              "leftValue": "={{ (($json.text || '').trim().length >= 20) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-text",
+      "name": "Has extractable text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        360,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LLM_BASE_URL + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.GROQ_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: $env.LLM_MODEL,\n  temperature: 0,\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'És um agente de extração de dados de faturas em português de Portugal. Processa apenas faturas de água, eletricidade e comunicações. Devolve exclusivamente JSON válido. Nunca inventes dados. Campos: document_type (FATURA_AGUA, FATURA_ELETRICIDADE, FATURA_COMUNICACOES, FATURA_OUTRA, NAO_FATURA), service (AGUA, ELETRICIDADE, COMUNICACOES, OUTRO ou null), provider, invoice_number, customer_number, issue_date (YYYY-MM-DD ou null), amount_due (número ou null), currency (por defeito EUR apenas se explícito ou inequivocamente indicado), multibanco_entity (string ou null), multibanco_reference (string ou null), payment_deadline (YYYY-MM-DD ou null), status (CLASSIFIED, REVIEW ou ERROR), confidence (0 a 1), reasoning_summary e review_reason. Não confundas subtotal com valor a pagar. Não confundas data de emissão com data limite de pagamento. Preserva entidade e referência Multibanco como texto. Se houver ambiguidade material, usa REVIEW.'\n    },\n    {\n      role: 'user',\n      content: 'Extrai e classifica esta fatura. Nome do ficheiro: ' + ($('List input files').item.json.name || $('List input files').item.json.title || '') + '\\n\\nTEXTO DA FATURA:\\n' + (($('Extract PDF text').item.json.text || '').slice(0, 60000))\n    }\n  ]\n}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "groq-request",
+      "name": "Classify with GroqCloud",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        600,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json?.choices?.[0]?.message?.content ?? '';\nconst cleaned = String(raw)\n  .trim()\n  .replace(/^\\`\\`\\`json\\s*/i, '')\n  .replace(/^\\`\\`\\`\\s*/i, '')\n  .replace(/\\`\\`\\`$/i, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (error) {\n  parsed = {\n    document_type: null,\n    service: null,\n    provider: null,\n    invoice_number: null,\n    customer_number: null,\n    issue_date: null,\n    amount_due: null,\n    currency: null,\n    multibanco_entity: null,\n    multibanco_reference: null,\n    payment_deadline: null,\n    status: 'ERROR',\n    confidence: 0,\n    reasoning_summary: null,\n    review_reason: 'Resposta do modelo não pôde ser convertida em JSON válido.'\n  };\n}\n\nconst allowedStatus = new Set(['CLASSIFIED', 'REVIEW', 'ERROR']);\nconst allowedService = new Set(['AGUA', 'ELETRICIDADE', 'COMUNICACOES', 'OUTRO', null]);\nconst allowedTypes = new Set(['FATURA_AGUA', 'FATURA_ELETRICIDADE', 'FATURA_COMUNICACOES', 'FATURA_OUTRA', 'NAO_FATURA', null]);\n\nlet confidence = Number(parsed.confidence);\nif (!Number.isFinite(confidence)) confidence = 0;\nconfidence = Math.max(0, Math.min(1, confidence));\n\nlet status = allowedStatus.has(parsed.status) ? parsed.status : 'REVIEW';\nconst service = allowedService.has(parsed.service ?? null) ? (parsed.service ?? null) : null;\nconst documentType = allowedTypes.has(parsed.document_type ?? null) ? (parsed.document_type ?? null) : null;\n\nif (status === 'CLASSIFIED' && confidence < 0.8) {\n  status = 'REVIEW';\n  parsed.review_reason = parsed.review_reason || 'Confiança inferior ao limiar de 0,80.';\n}\n\nconst source = $('List input files').item.json;\n\nreturn [{\n  json: {\n    drive_file_id: source.id,\n    file_name: source.name || source.title || null,\n    processed_at: new Date().toISOString(),\n    document_type: documentType,\n    service,\n    provider: parsed.provider ?? null,\n    invoice_number: parsed.invoice_number ?? null,\n    customer_number: parsed.customer_number ?? null,\n    issue_date: parsed.issue_date ?? null,\n    amount_due: parsed.amount_due === null || parsed.amount_due === undefined ? null : Number(parsed.amount_due),\n    currency: parsed.currency ?? null,\n    multibanco_entity: parsed.multibanco_entity == null ? null : String(parsed.multibanco_entity),\n    multibanco_reference: parsed.multibanco_reference == null ? null : String(parsed.multibanco_reference),\n    payment_deadline: parsed.payment_deadline ?? null,\n    status,\n    confidence,\n    reasoning_summary: parsed.reasoning_summary ?? null,\n    review_reason: parsed.review_reason ?? null,\n    rules_version: '0.2.0'\n  }\n}];"
+      },
+      "id": "parse-groq",
+      "name": "Validate structured result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('List input files').item.json;\nreturn [{\n  json: {\n    drive_file_id: source.id,\n    file_name: source.name || source.title || null,\n    processed_at: new Date().toISOString(),\n    document_type: null,\n    service: null,\n    provider: null,\n    invoice_number: null,\n    customer_number: null,\n    issue_date: null,\n    amount_due: null,\n    currency: null,\n    multibanco_entity: null,\n    multibanco_reference: null,\n    payment_deadline: null,\n    status: 'REVIEW',\n    confidence: 0,\n    reasoning_summary: null,\n    review_reason: 'PDF sem texto extraível suficiente. Pode tratar-se de um documento digitalizado que necessita de OCR.',\n    rules_version: '0.2.0'\n  }\n}];"
+      },
+      "id": "review-no-text",
+      "name": "Review - OCR required",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('List input files').item.json;\nreturn [{\n  json: {\n    drive_file_id: source.id,\n    file_name: source.name || source.title || null,\n    processed_at: new Date().toISOString(),\n    document_type: null,\n    service: null,\n    provider: null,\n    invoice_number: null,\n    customer_number: null,\n    issue_date: null,\n    amount_due: null,\n    currency: null,\n    multibanco_entity: null,\n    multibanco_reference: null,\n    payment_deadline: null,\n    status: 'REVIEW',\n    confidence: 0,\n    reasoning_summary: null,\n    review_reason: 'Formato não suportado nesta versão do workflow. A primeira versão operacional processa faturas PDF.',\n    rules_version: '0.2.0'\n  }\n}];"
+      },
+      "id": "review-unsupported",
+      "name": "Review - unsupported format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $env.GOOGLE_SHEET_NAME }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "drive_file_id": "={{ $json.drive_file_id }}",
+            "file_name": "={{ $json.file_name }}",
+            "processed_at": "={{ $json.processed_at }}",
+            "document_type": "={{ $json.document_type }}",
+            "service": "={{ $json.service }}",
+            "provider": "={{ $json.provider }}",
+            "invoice_number": "={{ $json.invoice_number }}",
+            "customer_number": "={{ $json.customer_number }}",
+            "issue_date": "={{ $json.issue_date }}",
+            "amount_due": "={{ $json.amount_due }}",
+            "currency": "={{ $json.currency }}",
+            "multibanco_entity": "={{ $json.multibanco_entity }}",
+            "multibanco_reference": "={{ $json.multibanco_reference }}",
+            "payment_deadline": "={{ $json.payment_deadline }}",
+            "status": "={{ $json.status }}",
+            "confidence": "={{ $json.confidence }}",
+            "reasoning_summary": "={{ $json.reasoning_summary }}",
+            "review_reason": "={{ $json.review_reason }}",
+            "rules_version": "={{ $json.rules_version }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "drive_file_id",
+              "displayName": "drive_file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "document_type",
+              "displayName": "document_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_number",
+              "displayName": "customer_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "issue_date",
+              "displayName": "issue_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amount_due",
+              "displayName": "amount_due",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "currency",
+              "displayName": "currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "multibanco_entity",
+              "displayName": "multibanco_entity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "multibanco_reference",
+              "displayName": "multibanco_reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "payment_deadline",
+              "displayName": "payment_deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reasoning_summary",
+              "displayName": "reasoning_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rules_version",
+              "displayName": "rules_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "id": "append-sheet",
+      "name": "Append classification to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1100,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $getWorkflowStaticData('global');\nif (!state.processedFileIds) state.processedFileIds = {};\n\nconst id = $json.drive_file_id;\nif (id) state.processedFileIds[id] = new Date().toISOString();\n\nconst entries = Object.entries(state.processedFileIds);\nif (entries.length > 5000) {\n  entries\n    .sort((a, b) => String(a[1]).localeCompare(String(b[1])))\n    .slice(0, entries.length - 5000)\n    .forEach(([key]) => delete state.processedFileIds[key]);\n}\n\nreturn $input.all();"
+      },
+      "id": "mark-processed",
+      "name": "Mark as processed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "classified-condition",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "CLASSIFIED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-classified",
+      "name": "Status CLASSIFIED?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1580,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "review-condition",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "REVIEW",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-review",
+      "name": "Status REVIEW?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1820,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.drive_file_id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID }}"
+        }
+      },
+      "id": "move-processed",
+      "name": "Move to Processed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1820,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.drive_file_id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_DRIVE_REVIEW_FOLDER_ID }}"
+        }
+      },
+      "id": "move-review",
+      "name": "Move to Review",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2060,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.drive_file_id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_DRIVE_ERROR_FOLDER_ID }}"
+        }
+      },
+      "id": "move-error",
+      "name": "Move to Error",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2060,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Configuração necessária\\n\\nAntes de ativar:\\n1. Selecionar uma credencial Google Drive nos nós Google Drive.\\n2. Selecionar uma credencial Google Sheets no nó de registo.\\n3. Selecionar uma credencial Gmail OAuth2 no nó de envio de email.\\n4. Confirmar os cabeçalhos da folha.\\n5. Confirmar `NOTIFICATION_EMAIL` no `.env`.\\n6. Executar **Manual test** com uma fatura PDF.\\n7. Só depois ativar o workflow.\\n\\nPDFs digitalizados sem texto são enviados para **REVIEW**.",
+        "height": 300,
+        "width": 520
       },
       "id": "setup-note",
       "name": "Setup",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [180, -340]
+      "position": [
+        -260,
+        -520
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
+        "subject": "={{ '[Document Classification] ' + $('Append classification to Google Sheets').item.json.status + ' - ' + ($('Append classification to Google Sheets').item.json.file_name || 'documento') }}",
+        "emailType": "text",
+        "message": "={{ 'Documento processado pelo Document Classification Agent.\\n\\nFicheiro: ' + ($('Append classification to Google Sheets').item.json.file_name || '-') + '\\nEstado: ' + ($('Append classification to Google Sheets').item.json.status || '-') + '\\nServiço: ' + ($('Append classification to Google Sheets').item.json.service || '-') + '\\nFornecedor: ' + ($('Append classification to Google Sheets').item.json.provider || '-') + '\\nNúmero da fatura: ' + ($('Append classification to Google Sheets').item.json.invoice_number || '-') + '\\nData de emissão: ' + ($('Append classification to Google Sheets').item.json.issue_date || '-') + '\\nValor a pagar: ' + ($('Append classification to Google Sheets').item.json.amount_due ?? '-') + ' ' + ($('Append classification to Google Sheets').item.json.currency || '') + '\\nData limite de pagamento: ' + ($('Append classification to Google Sheets').item.json.payment_deadline || '-') + '\\nEntidade Multibanco: ' + ($('Append classification to Google Sheets').item.json.multibanco_entity || '-') + '\\nReferência Multibanco: ' + ($('Append classification to Google Sheets').item.json.multibanco_reference || '-') + '\\nConfiança: ' + ($('Append classification to Google Sheets').item.json.confidence ?? '-') + '\\nMotivo de revisão: ' + ($('Append classification to Google Sheets').item.json.review_reason || '-') + '\\n\\nDrive file ID: ' + ($('Append classification to Google Sheets').item.json.drive_file_id || '-') }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Document Classification Agent"
+        }
+      },
+      "id": "send-notification-email",
+      "name": "Send notification email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2320,
+        -20
+      ]
     }
   ],
   "connections": {
@@ -48,7 +686,244 @@
       "main": [
         [
           {
-            "node": "Load configuration",
+            "node": "Validate configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual test": {
+      "main": [
+        [
+          {
+            "node": "Validate configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate configuration": {
+      "main": [
+        [
+          {
+            "node": "List input files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List input files": {
+      "main": [
+        [
+          {
+            "node": "Skip already processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip already processed": {
+      "main": [
+        [
+          {
+            "node": "Is PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF?": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review - unsupported format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF text": {
+      "main": [
+        [
+          {
+            "node": "Has extractable text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has extractable text?": {
+      "main": [
+        [
+          {
+            "node": "Classify with GroqCloud",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review - OCR required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify with GroqCloud": {
+      "main": [
+        [
+          {
+            "node": "Validate structured result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate structured result": {
+      "main": [
+        [
+          {
+            "node": "Append classification to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review - OCR required": {
+      "main": [
+        [
+          {
+            "node": "Append classification to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review - unsupported format": {
+      "main": [
+        [
+          {
+            "node": "Append classification to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append classification to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Mark as processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as processed": {
+      "main": [
+        [
+          {
+            "node": "Status CLASSIFIED?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status CLASSIFIED?": {
+      "main": [
+        [
+          {
+            "node": "Move to Processed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status REVIEW?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status REVIEW?": {
+      "main": [
+        [
+          {
+            "node": "Move to Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Move to Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Processed": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Review": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Error": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
             "type": "main",
             "index": 0
           }
@@ -57,10 +932,12 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "Europe/Lisbon",
+    "saveManualExecutions": true
   },
-  "versionId": "00000000-0000-4000-8000-000000000001",
-  "triggerCount": 1,
+  "versionId": "00000000-0000-4000-8000-000000000005",
+  "triggerCount": 2,
   "meta": {
     "templateCredsSetupCompleted": false
   },
