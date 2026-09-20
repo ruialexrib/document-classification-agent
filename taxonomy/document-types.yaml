@@ -1,30 +1,27 @@
-version: "0.1.0"
+version: "0.2.0"
 
 document_types:
-  - code: FATURA
-    label: Fatura
-    description: Documento comercial que titula uma venda ou prestação de serviços.
+  - code: FATURA_AGUA
+    label: Fatura de água
+    service: AGUA
+    description: Fatura relativa ao fornecimento de água e serviços associados.
 
-  - code: NOTA_CREDITO
-    label: Nota de crédito
-    description: Documento que corrige ou reduz valores anteriormente faturados.
+  - code: FATURA_ELETRICIDADE
+    label: Fatura de eletricidade
+    service: ELETRICIDADE
+    description: Fatura relativa ao fornecimento de energia elétrica e serviços associados.
 
-  - code: RECIBO
-    label: Recibo
-    description: Documento comprovativo de pagamento.
+  - code: FATURA_COMUNICACOES
+    label: Fatura de comunicações
+    service: COMUNICACOES
+    description: Fatura relativa a serviços de telecomunicações, incluindo internet, telefone, televisão e serviços associados.
 
-  - code: CONTRATO
-    label: Contrato
-    description: Documento que formaliza obrigações entre partes.
+  - code: FATURA_OUTRA
+    label: Outra fatura
+    service: OUTRO
+    description: Fatura válida cujo serviço não pode ser classificado como água, eletricidade ou comunicações.
 
-  - code: OFICIO
-    label: Ofício
-    description: Comunicação formal institucional.
-
-  - code: RELATORIO
-    label: Relatório
-    description: Documento estruturado de análise, acompanhamento ou apresentação de resultados.
-
-  - code: OUTRO
-    label: Outro
-    description: Documento que não corresponde de forma segura aos tipos anteriores.
+  - code: NAO_FATURA
+    label: Não é fatura
+    service: null
+    description: Documento que não corresponde a uma fatura.
