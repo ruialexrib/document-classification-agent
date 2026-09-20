@@ -1,5 +1,7 @@
 {
+  "id": "doc-classification-base",
   "name": "Document Classification - Base",
+  "active": false,
   "nodes": [
     {
       "parameters": {
@@ -54,11 +56,11 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
   "versionId": "00000000-0000-4000-8000-000000000001",
+  "triggerCount": 1,
   "meta": {
     "templateCredsSetupCompleted": false
   },
