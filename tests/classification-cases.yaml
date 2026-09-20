@@ -1,16 +1,38 @@
 cases:
-  - id: invoice-explicit
-    input: Documento identificado explicitamente como fatura.
+  - id: water-invoice
+    description: Fatura de água com total e dados Multibanco.
     expected:
-      document_type: FATURA
+      document_type: FATURA_AGUA
+      service: AGUA
       status: CLASSIFIED
 
-  - id: ambiguous-document
-    input: Documento sem título e com conteúdo insuficiente para distinguir entre ofício e relatório.
+  - id: electricity-invoice
+    description: Fatura com consumo em kWh, potência contratada e CPE.
+    expected:
+      document_type: FATURA_ELETRICIDADE
+      service: ELETRICIDADE
+      status: CLASSIFIED
+
+  - id: communications-invoice
+    description: Fatura com serviços de internet, televisão e telefone.
+    expected:
+      document_type: FATURA_COMUNICACOES
+      service: COMUNICACOES
+      status: CLASSIFIED
+
+  - id: missing-multibanco
+    description: Fatura válida sem pagamento Multibanco.
+    expected:
+      status: CLASSIFIED
+      multibanco_entity: null
+      multibanco_reference: null
+
+  - id: ambiguous-total
+    description: Documento com vários totais sem indicação clara do montante efetivamente a pagar.
     expected:
       status: REVIEW
 
   - id: unreadable-document
-    input: Ficheiro sem conteúdo extraível e sem alternativa disponível.
+    description: Ficheiro sem conteúdo extraível e sem alternativa disponível.
     expected:
       status: ERROR
