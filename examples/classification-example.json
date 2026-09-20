@@ -1,0 +1,18 @@
+{
+  "drive_file_id": "example-drive-file-id",
+  "file_name": "FT_2026_00123.pdf",
+  "processed_at": "2026-09-20T12:00:00+01:00",
+  "document_type": "FATURA",
+  "category": null,
+  "entity": "Fornecedor Exemplo, Lda.",
+  "document_date": "2026-09-18",
+  "document_number": "FT 2026/123",
+  "amount": 1230.5,
+  "currency": "EUR",
+  "tax_id": null,
+  "status": "CLASSIFIED",
+  "confidence": 0.94,
+  "reasoning_summary": "O documento identifica-se explicitamente como fatura e contém número, data e total.",
+  "review_reason": null,
+  "rules_version": "0.1.0"
+}
