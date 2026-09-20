@@ -267,14 +267,14 @@ Após o primeiro arranque:
 
 1. configurar as credenciais do Google Drive;
 2. configurar as credenciais do Google Sheets;
-3. configurar o GroqCloud como fornecedor do modelo de linguagem;
+3. associar as credenciais Google Drive e Google Sheets aos respetivos nós;\n4. confirmar a configuração GroqCloud;
 4. indicar os IDs das pastas;
 5. indicar o Google Sheet de destino;
 6. executar o workflow manualmente;
 7. validar o resultado;
 8. ativar o workflow.
 
-A execução automática está preparada para uma cadência de **5 em 5 minutos**.
+A execução automática está preparada para uma cadência de **5 em 5 minutos**. A versão operacional suporta inicialmente faturas PDF com texto extraível; PDFs digitalizados sem camada de texto são encaminhados para `REVIEW` para posterior OCR.
 
 ---
 
