@@ -8,7 +8,7 @@
 [![Google Drive](https://img.shields.io/badge/Google%20Drive-Documentos-4285F4?logo=googledrive&logoColor=white)](#google-drive)
 [![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Registo-34A853?logo=googlesheets&logoColor=white)](#resultado)
 [![Docker](https://img.shields.io/badge/Docker-n8n-2496ED?logo=docker&logoColor=white)](#execu%C3%A7%C3%A3o)
-[![IA](https://img.shields.io/badge/IA-Classifica%C3%A7%C3%A3o-6C63FF)](#princ%C3%ADpio-essencial)
+[![GroqCloud](https://img.shields.io/badge/GroqCloud-LLM-F55036)](#groqcloud)\n[![IA](https://img.shields.io/badge/IA-Classifica%C3%A7%C3%A3o-6C63FF)](#princ%C3%ADpio-essencial)
 
 **Água · Eletricidade · Comunicações · Extração de dados · Google Drive · Google Sheets · n8n**
 
@@ -267,7 +267,7 @@ Após o primeiro arranque:
 
 1. configurar as credenciais do Google Drive;
 2. configurar as credenciais do Google Sheets;
-3. configurar o fornecedor do modelo de linguagem;
+3. configurar o GroqCloud como fornecedor do modelo de linguagem;
 4. indicar os IDs das pastas;
 5. indicar o Google Sheet de destino;
 6. executar o workflow manualmente;
