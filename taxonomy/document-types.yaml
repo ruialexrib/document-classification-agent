@@ -1,0 +1,30 @@
+version: "0.1.0"
+
+document_types:
+  - code: FATURA
+    label: Fatura
+    description: Documento comercial que titula uma venda ou prestação de serviços.
+
+  - code: NOTA_CREDITO
+    label: Nota de crédito
+    description: Documento que corrige ou reduz valores anteriormente faturados.
+
+  - code: RECIBO
+    label: Recibo
+    description: Documento comprovativo de pagamento.
+
+  - code: CONTRATO
+    label: Contrato
+    description: Documento que formaliza obrigações entre partes.
+
+  - code: OFICIO
+    label: Ofício
+    description: Comunicação formal institucional.
+
+  - code: RELATORIO
+    label: Relatório
+    description: Documento estruturado de análise, acompanhamento ou apresentação de resultados.
+
+  - code: OUTRO
+    label: Outro
+    description: Documento que não corresponde de forma segura aos tipos anteriores.
