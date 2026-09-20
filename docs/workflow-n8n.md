@@ -1,18 +1,50 @@
 # Workflow n8n
 
-O workflow base encontra-se em `n8n/workflows/document-classification.json` e é importado automaticamente em cada arranque do contentor, antes do serviço n8n iniciar. Se a importação falhar, o contentor termina com erro em vez de arrancar sem workflow.
+O workflow operacional encontra-se em `n8n/workflows/document-classification.json` e é importado automaticamente no arranque do contentor.
+
+## Fluxo operacional
+
+```text
+Every 5 minutes / Manual test
+        ↓
+Validar configuração
+        ↓
+Listar ficheiros na pasta de entrada
+        ↓
+Ignorar IDs já processados
+        ↓
+É PDF?
+   ├── não → REVIEW
+   └── sim
+        ↓
+Descarregar PDF
+        ↓
+Extrair texto
+        ↓
+Existe texto suficiente?
+   ├── não → REVIEW (OCR necessário)
+   └── sim
+        ↓
+GroqCloud
+        ↓
+Validar JSON estruturado
+        ↓
+Google Sheets
+        ↓
+Marcar ID como processado
+        ↓
+CLASSIFIED → Processados
+REVIEW     → A_Rever
+ERROR      → Com_Erro
+```
 
 ## Periodicidade
 
-A execução está preparada para uma cadência de cinco minutos.
+O trigger automático executa de cinco em cinco minutos. Existe também um `Manual test` para testar o workflow antes da ativação.
 
 ## Provider de IA
 
-O provider definido para o projeto é o **GroqCloud**.
-
-A API da Groq é compatível com a API OpenAI para este tipo de integração.
-
-Configuração prevista:
+O provider definido é o **GroqCloud**:
 
 ```env
 LLM_PROVIDER=groq
@@ -21,35 +53,65 @@ GROQ_API_KEY=
 LLM_MODEL=qwen/qwen3.6-27b
 ```
 
-A chave real deve existir apenas no ficheiro local `.env` ou no gestor de credenciais do n8n. Nunca deve ser incluída no repositório.
+A chave real deve existir apenas no ficheiro local `.env`. Nunca deve ser incluída no repositório.
 
-## Configuração necessária
+## Credenciais Google
 
-1. Configurar credenciais Google Drive e Google Sheets no n8n.
-2. Preencher os IDs das pastas no ficheiro `.env`.
-3. Criar uma API key no GroqCloud.
-4. Preencher `GROQ_API_KEY` apenas no ambiente local.
-5. Confirmar o modelo definido em `LLM_MODEL`.
-6. Rever o Google Sheet de destino.
-7. Ativar o workflow apenas depois de validar uma execução manual.
+As credenciais OAuth não são guardadas no JSON do workflow.
 
-## Modelo inicial
+Após a primeira importação, é necessário selecionar no n8n:
 
-O projeto usa inicialmente:
+- uma credencial Google Drive nos nós Google Drive;
+- uma credencial Google Sheets no nó de registo.
 
-```text
-qwen/qwen3.6-27b
-```
+Depois de configuradas, ficam persistidas no volume `n8n_data`.
 
-O modelo pode ser substituído por outro modelo ativo no GroqCloud sem alterar a restante arquitetura, desde que seja adequado a extração estruturada e JSON.
+## Formatos suportados
+
+A primeira versão operacional suporta faturas em **PDF com texto extraível**.
+
+PDFs digitalizados sem camada de texto são encaminhados para `REVIEW` com indicação de necessidade de OCR.
+
+Outros formatos são igualmente encaminhados para `REVIEW`, sem tentativa de classificação.
 
 ## Idempotência
 
-O `drive_file_id` deve ser usado para impedir o processamento repetido do mesmo ficheiro.
+O workflow usa o `drive_file_id` e `workflow static data` para evitar o reprocessamento do mesmo ficheiro.
 
-## Pastas previstas
+Após o registo no Google Sheets, o ID é marcado como processado. A memória é limitada aos 5000 IDs mais recentes.
 
-- Documentos_A_Classificar
-- Documentos_Processados
-- Documentos_A_Rever
-- Documentos_Com_Erro
+Adicionalmente, os ficheiros processados são retirados da pasta de entrada e movidos para uma das pastas de destino.
+
+## Campos registados
+
+O Google Sheets recebe:
+
+- `drive_file_id`
+- `file_name`
+- `processed_at`
+- `document_type`
+- `service`
+- `provider`
+- `invoice_number`
+- `customer_number`
+- `issue_date`
+- `amount_due`
+- `currency`
+- `multibanco_entity`
+- `multibanco_reference`
+- `payment_deadline`
+- `status`
+- `confidence`
+- `reasoning_summary`
+- `review_reason`
+- `rules_version`
+
+## Ativação recomendada
+
+1. executar `docker compose up -d`;
+2. abrir o workflow importado;
+3. associar as credenciais Google aos nós;
+4. colocar uma fatura PDF na pasta `Documentos_A_Classificar`;
+5. executar `Manual test`;
+6. validar o registo no Google Sheets e o movimento do ficheiro;
+7. ativar o workflow automático.
