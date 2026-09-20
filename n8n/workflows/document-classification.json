@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{json:{inputFolderId:$env.GOOGLE_DRIVE_INPUT_FOLDER_ID,processedFolderId:$env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,reviewFolderId:$env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,errorFolderId:$env.GOOGLE_DRIVE_ERROR_FOLDER_ID,sheetId:$env.GOOGLE_SHEET_ID,sheetName:$env.GOOGLE_SHEET_NAME,llmBaseUrl:$env.LLM_BASE_URL,llmModel:$env.LLM_MODEL}}];"
+        "jsCode": "return [{json:{inputFolderId:$env.GOOGLE_DRIVE_INPUT_FOLDER_ID,processedFolderId:$env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,reviewFolderId:$env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,errorFolderId:$env.GOOGLE_DRIVE_ERROR_FOLDER_ID,sheetId:$env.GOOGLE_SHEET_ID,sheetName:$env.GOOGLE_SHEET_NAME,llmProvider:$env.LLM_PROVIDER,llmBaseUrl:$env.LLM_BASE_URL,llmModel:$env.LLM_MODEL}}];"
       },
       "id": "load-config",
       "name": "Load configuration",
@@ -30,9 +30,9 @@
     },
     {
       "parameters": {
-        "content": "BASE WORKFLOW\n\nConfigure Google Drive, Google Sheets and LLM credentials before activation. The remaining operational nodes will be added after the target taxonomy and Google Drive folders are confirmed.",
-        "height": 260,
-        "width": 420
+        "content": "BASE WORKFLOW\n\nProvider: GroqCloud\nBase URL: https://api.groq.com/openai/v1\n\nConfigure Google Drive, Google Sheets and Groq credentials before activation. Keep GROQ_API_KEY outside the workflow JSON.",
+        "height": 280,
+        "width": 440
       },
       "id": "setup-note",
       "name": "Setup",
