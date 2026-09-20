@@ -175,6 +175,9 @@ LLM_PROVIDER=groq
 LLM_BASE_URL=https://api.groq.com/openai/v1
 GROQ_API_KEY=
 LLM_MODEL=qwen/qwen3.6-27b
+
+# Email de notificação
+NOTIFICATION_EMAIL=
 ```
 
 O `docker-compose.yml` define adicionalmente:
@@ -284,7 +287,8 @@ Abrir o Google Cloud Console e criar ou selecionar um projeto para o agente.
 Em **APIs e serviços**, ativar:
 
 - Google Drive API;
-- Google Sheets API.
+- Google Sheets API;
+- Gmail API.
 
 ### 3. Configurar Google Auth Platform
 
@@ -492,6 +496,30 @@ Autorizar a mesma conta Google.
 
 > O consentimento OAuth é necessário pelo menos uma vez. Depois, as credenciais ficam persistidas no volume `n8n_data`.
 
+### Gmail
+
+No nó:
+
+```text
+Send notification email
+```
+
+criar uma credencial:
+
+```text
+Gmail OAuth2 API
+```
+
+Pode ser utilizado o mesmo projeto Google Cloud, Client ID e Client Secret usados nas restantes integrações Google, desde que a **Gmail API** esteja ativa.
+
+O destinatário não fica gravado no workflow. É lido do ficheiro `.env`:
+
+```env
+NOTIFICATION_EMAIL=nome@example.com
+```
+
+O email é enviado no fim do processamento, depois de o ficheiro ser encaminhado para a pasta correspondente. Inclui o estado, serviço, fornecedor, número da fatura, datas, valor, dados Multibanco, confiança e eventual motivo de revisão.
+
 ---
 
 ## Testar o workflow
@@ -539,6 +567,8 @@ Append classification to Google Sheets
 Mark as processed
    ↓
 Move to Processed / Review / Error
+   ↓
+Send notification email
 ```
 
 ---
@@ -633,7 +663,7 @@ docker compose up -d
 
 ### `Node does not have any credentials set`
 
-Abrir o nó e selecionar a credencial Google correspondente.
+Abrir o nó e selecionar a credencial Google correspondente. O nó `Send notification email` necessita de uma credencial `Gmail OAuth2 API`.
 
 ### Google OAuth: `403 access_denied`
 
