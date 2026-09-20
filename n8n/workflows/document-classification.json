@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const required = [\n  'GOOGLE_DRIVE_INPUT_FOLDER_ID',\n  'GOOGLE_DRIVE_PROCESSED_FOLDER_ID',\n  'GOOGLE_DRIVE_REVIEW_FOLDER_ID',\n  'GOOGLE_DRIVE_ERROR_FOLDER_ID',\n  'GOOGLE_SHEET_ID',\n  'GOOGLE_SHEET_NAME',\n  'LLM_BASE_URL',\n  'LLM_MODEL',\n  'GROQ_API_KEY',\n];\n\nconst missing = required.filter((key) => !$env[key]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\n\nreturn [{\n  json: {\n    inputFolderId: $env.GOOGLE_DRIVE_INPUT_FOLDER_ID,\n    processedFolderId: $env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,\n    reviewFolderId: $env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,\n    errorFolderId: $env.GOOGLE_DRIVE_ERROR_FOLDER_ID,\n    sheetId: $env.GOOGLE_SHEET_ID,\n    sheetName: $env.GOOGLE_SHEET_NAME,\n    llmProvider: $env.LLM_PROVIDER || 'groq',\n    llmBaseUrl: $env.LLM_BASE_URL,\n    llmModel: $env.LLM_MODEL,\n  }\n}];"
+        "jsCode": "const required = [\n  'GOOGLE_DRIVE_INPUT_FOLDER_ID',\n  'GOOGLE_DRIVE_PROCESSED_FOLDER_ID',\n  'GOOGLE_DRIVE_REVIEW_FOLDER_ID',\n  'GOOGLE_DRIVE_ERROR_FOLDER_ID',\n  'GOOGLE_SHEET_ID',\n  'GOOGLE_SHEET_NAME',\n  'LLM_BASE_URL',\n  'LLM_MODEL',\n  'GROQ_API_KEY',\n  'NOTIFICATION_EMAIL',\n];\n\nconst missing = required.filter((key) => !$env[key]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\n\nreturn [{\n  json: {\n    inputFolderId: $env.GOOGLE_DRIVE_INPUT_FOLDER_ID,\n    processedFolderId: $env.GOOGLE_DRIVE_PROCESSED_FOLDER_ID,\n    reviewFolderId: $env.GOOGLE_DRIVE_REVIEW_FOLDER_ID,\n    errorFolderId: $env.GOOGLE_DRIVE_ERROR_FOLDER_ID,\n    sheetId: $env.GOOGLE_SHEET_ID,\n    sheetName: $env.GOOGLE_SHEET_NAME,\n    llmProvider: $env.LLM_PROVIDER || 'groq',\n    llmBaseUrl: $env.LLM_BASE_URL,\n    llmModel: $env.LLM_MODEL,\n    notificationEmail: $env.NOTIFICATION_EMAIL,\n  }\n}];"
       },
       "id": "load-config",
       "name": "Validate configuration",
@@ -647,7 +647,7 @@
     },
     {
       "parameters": {
-        "content": "## Configuração necessária\\n\\nAntes de ativar:\\n1. Selecionar uma credencial Google Drive nos quatro nós Google Drive.\\n2. Selecionar uma credencial Google Sheets no nó de registo.\\n3. Confirmar que a folha tem os cabeçalhos definidos no schema do nó.\\n4. Executar **Manual test** com uma fatura PDF.\\n5. Só depois ativar o workflow.\\n\\nPDFs digitalizados sem texto são enviados para **REVIEW**.",
+        "content": "## Configuração necessária\\n\\nAntes de ativar:\\n1. Selecionar uma credencial Google Drive nos nós Google Drive.\\n2. Selecionar uma credencial Google Sheets no nó de registo.\\n3. Selecionar uma credencial Gmail OAuth2 no nó de envio de email.\\n4. Confirmar os cabeçalhos da folha.\\n5. Confirmar `NOTIFICATION_EMAIL` no `.env`.\\n6. Executar **Manual test** com uma fatura PDF.\\n7. Só depois ativar o workflow.\\n\\nPDFs digitalizados sem texto são enviados para **REVIEW**.",
         "height": 300,
         "width": 520
       },
@@ -658,6 +658,26 @@
       "position": [
         -260,
         -520
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
+        "subject": "={{ '[Document Classification] ' + $('Append classification to Google Sheets').item.json.status + ' - ' + ($('Append classification to Google Sheets').item.json.file_name || 'documento') }}",
+        "emailType": "text",
+        "message": "={{ 'Documento processado pelo Document Classification Agent.\\n\\nFicheiro: ' + ($('Append classification to Google Sheets').item.json.file_name || '-') + '\\nEstado: ' + ($('Append classification to Google Sheets').item.json.status || '-') + '\\nServiço: ' + ($('Append classification to Google Sheets').item.json.service || '-') + '\\nFornecedor: ' + ($('Append classification to Google Sheets').item.json.provider || '-') + '\\nNúmero da fatura: ' + ($('Append classification to Google Sheets').item.json.invoice_number || '-') + '\\nData de emissão: ' + ($('Append classification to Google Sheets').item.json.issue_date || '-') + '\\nValor a pagar: ' + ($('Append classification to Google Sheets').item.json.amount_due ?? '-') + ' ' + ($('Append classification to Google Sheets').item.json.currency || '') + '\\nData limite de pagamento: ' + ($('Append classification to Google Sheets').item.json.payment_deadline || '-') + '\\nEntidade Multibanco: ' + ($('Append classification to Google Sheets').item.json.multibanco_entity || '-') + '\\nReferência Multibanco: ' + ($('Append classification to Google Sheets').item.json.multibanco_reference || '-') + '\\nConfiança: ' + ($('Append classification to Google Sheets').item.json.confidence ?? '-') + '\\nMotivo de revisão: ' + ($('Append classification to Google Sheets').item.json.review_reason || '-') + '\\n\\nDrive file ID: ' + ($('Append classification to Google Sheets').item.json.drive_file_id || '-') }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Document Classification Agent"
+        }
+      },
+      "id": "send-notification-email",
+      "name": "Send notification email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2320,
+        -20
       ]
     }
   ],
@@ -876,6 +896,39 @@
           }
         ]
       ]
+    },
+    "Move to Processed": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Review": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Error": {
+      "main": [
+        [
+          {
+            "node": "Send notification email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -883,7 +936,7 @@
     "timezone": "Europe/Lisbon",
     "saveManualExecutions": true
   },
-  "versionId": "00000000-0000-4000-8000-000000000004",
+  "versionId": "00000000-0000-4000-8000-000000000005",
   "triggerCount": 2,
   "meta": {
     "templateCredsSetupCompleted": false
