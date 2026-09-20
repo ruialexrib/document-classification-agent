@@ -2,7 +2,33 @@
 
 ## Objetivo
 
-Classificar documentos provenientes do Google Drive segundo a taxonomia e as regras deste repositório, produzindo uma resposta estruturada e auditável.
+Processar faturas de água, eletricidade e comunicações provenientes do Google Drive, identificar o tipo de serviço e extrair os principais elementos necessários para registo e controlo de pagamento.
+
+## Tipos de serviço suportados
+
+- `AGUA`
+- `ELETRICIDADE`
+- `COMUNICACOES`
+
+Outras faturas podem ser identificadas como `OUTRO`, mas devem ser encaminhadas para revisão.
+
+## Campos principais a extrair
+
+Para todas as faturas, procurar:
+
+1. data de emissão;
+2. serviço;
+3. valor a pagar;
+4. entidade Multibanco;
+5. referência Multibanco;
+6. data limite de pagamento.
+
+Campos complementares, quando explicitamente presentes:
+
+- fornecedor;
+- número da fatura;
+- número de cliente ou contrato;
+- moeda.
 
 ## Princípios obrigatórios
 
@@ -13,9 +39,11 @@ Classificar documentos provenientes do Google Drive segundo a taxonomia e as reg
 5. Usar `ERROR` apenas para falhas técnicas ou conteúdo não processável.
 6. Preservar sempre o `drive_file_id` e o nome original.
 7. Produzir output compatível com `schemas/classification.schema.json`.
-8. Aplicar primeiro as regras de `taxonomy/classification-rules.yaml`.
-9. A classificação deve ser explicável através do campo `reasoning_summary`, de forma curta e factual.
-10. Nunca incluir credenciais, tokens ou segredos nos resultados.
+8. Aplicar as regras de `taxonomy/classification-rules.yaml`.
+9. Preservar entidade e referência Multibanco como texto.
+10. Não confundir data de emissão com data limite de pagamento.
+11. Não confundir subtotal, valor sem IVA ou saldo intermédio com o valor final a pagar.
+12. Nunca incluir credenciais, tokens ou segredos nos resultados.
 
 ## Ordem de execução
 
