@@ -18,7 +18,12 @@ services:
       - n8n_data:/home/node/.n8n
       - ./n8n/workflows:/workflows:ro
       - ./docker/n8n/entrypoint.sh:/custom-entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/custom-entrypoint.sh"]
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        tr -d '\r' < /custom-entrypoint.sh > /tmp/custom-entrypoint.sh
+        exec /bin/sh /tmp/custom-entrypoint.sh
 
 volumes:
   n8n_data:
