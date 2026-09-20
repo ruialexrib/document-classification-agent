@@ -162,11 +162,12 @@
           "conditions": [
             {
               "id": "has-text-condition",
-              "leftValue": "={{ ($json.text || '').trim().length }}",
-              "rightValue": 20,
+              "leftValue": "={{ (($json.text || '').trim().length >= 20) }}",
+              "rightValue": true,
               "operator": {
-                "type": "number",
-                "operation": "largerEqual"
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
               }
             }
           ],
@@ -882,7 +883,7 @@
     "timezone": "Europe/Lisbon",
     "saveManualExecutions": true
   },
-  "versionId": "00000000-0000-4000-8000-000000000003",
+  "versionId": "00000000-0000-4000-8000-000000000004",
   "triggerCount": 2,
   "meta": {
     "templateCredsSetupCompleted": false
